@@ -44,7 +44,7 @@ services:
     command: uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
     ports:
       - "8000:8000"
-    env_file: .env
+    env_file: ${ENV_FILE:-.env}
     volumes:
       - .:/app
     depends_on:
@@ -64,7 +64,7 @@ services:
       --concurrency=4
       --queues=email,default
       --hostname=worker@%h
-    env_file: .env
+    env_file: ${ENV_FILE:-.env}
     volumes:
       - .:/app
     depends_on:
@@ -82,7 +82,7 @@ services:
       --basic_auth=admin:admin
     ports:
       - "5555:5555"
-    env_file: .env
+    env_file: ${ENV_FILE:-.env}
     volumes:
       - .:/app
     depends_on:

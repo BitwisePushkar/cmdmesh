@@ -31,6 +31,8 @@ class Settings(BaseSettings):
     password_reset_otp_cooldown_seconds: int = 60
     app_env: str = "development"
     backend_url: str = "http://localhost:8000"
+    chat_session_ttl_seconds: int = 7200
+    chat_max_context_messages: int = 20
 
     @property
     def is_production(self) -> bool:

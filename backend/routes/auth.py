@@ -28,6 +28,7 @@ from backend.services.token_service import (
     TokenExpiredError, TokenInvalidError, TokenRevokedError, TokenService,
 )
 from backend.models.token import RefreshToken
+from backend.tasks.email_tasks import send_otp_email
 
 log = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -72,8 +73,7 @@ async def signup(
         code = await otp_svc.create_otp(data.email)
     except OTPCooldownError as exc:
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=str(exc))
-    await _store_signup_data(redis, data)
-    from backend.tasks.email_tasks import send_otp_email
+    await _store_signup_data(redis, data)  
     send_otp_email.delay(email=data.email, username=data.username, otp=code)
     return MessageResponse(
         message="Verification code sent",
@@ -124,7 +124,6 @@ async def resend_otp(
         code = await otp_svc.create_otp(data.email)
     except OTPCooldownError as exc:
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=str(exc))
-    from backend.tasks.email_tasks import send_otp_email
     send_otp_email.delay(email=data.email, username=username, otp=code)
     return MessageResponse(message="OTP resent", detail="New code sent to your email.")
 

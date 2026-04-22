@@ -6,7 +6,8 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from backend.config import get_settings
 from backend.db.base import Base, engine
-from backend.routes import auth
+from backend.routes import auth, chat
+import backend.models
 
 logging.basicConfig(
     level=logging.INFO,
@@ -21,10 +22,9 @@ async def lifespan(app: FastAPI):
     if not settings.token_encryption_key:
         log.critical("TOKEN_ENCRYPTION_KEY is not set. Refusing to start.")
         sys.exit(1)
-    if not settings.is_production:
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-        log.info("Database tables ready (dev mode).")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    log.info("Database tables ready.")
     log.info("cmdmesh backend started — env=%s", settings.app_env)
     yield
     log.info("cmdmesh backend shutting down.")
@@ -41,6 +41,7 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
     app.include_router(auth.router)
+    app.include_router(chat.router)
     @app.exception_handler(RequestValidationError)
     async def validation_error_handler(
         request: Request, exc: RequestValidationError

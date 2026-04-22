@@ -133,15 +133,8 @@ uv run python -c "from cryptography.fernet import Fernet; print(Fernet.generate_
 
 ## Backend Setup (Docker)
 
-### Development
-
 ```bash
 docker compose up -d
 ```
-
-### Production
-
-```bash
-docker compose --env-file .env.prod up -d
-```
+Then just use the cmdmesh command simply 
 ---
