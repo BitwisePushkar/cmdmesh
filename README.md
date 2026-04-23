@@ -54,6 +54,9 @@ uv run cmdmesh whoami           # Show current session
 uv run cmdmesh refresh          # Refresh access token
 uv run cmdmesh logout           # Logout + clear credentials
 uv run cmdmesh reset-password   # Reset password via OTP
+uv run cmdmesh wakeup           # To run CLI commands after backend server started
+uv run cmdmesh session          # To check session
+uv run cmdmesh history          # To view chat history
 ```
 
 ---
@@ -77,6 +80,9 @@ cmdmesh resend-otp
 cmdmesh refresh
 cmdmesh logout
 cmdmesh reset-password 
+cmdmesh wakeup
+cmdmesh session     
+cmdmesh history  
 ```
 
 ---
