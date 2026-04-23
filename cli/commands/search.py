@@ -13,18 +13,17 @@ from rich.panel import Panel
 from rich.table import Table
 from cli.auth import client as api
 from cli.auth.client import APIError
-from cli.auth.store import CredentialStore
-from cli.utils.display import (console, err_console, print_error, print_info,
-print_success, print_warning,)
+from cli.utils.display import (
+    console,
+    err_console,
+    print_error,
+    print_info,
+    print_success,
+    print_warning,
+)
+from cli.utils.auth_helpers import _require_login, _prompt_hf_setup
 
 app = typer.Typer(help="Search and URL context commands")
-
-HF_MODELS = [
-    {"id": "meta-llama/Llama-3.1-8B-Instruct",       "label": "Llama 3.1 8B Instruct"},
-    {"id": "meta-llama/Llama-3.2-1B-Instruct",       "label": "Llama 3.2 1B Instruct"},
-    {"id": "HuggingFaceH4/zephyr-7b-beta",            "label": "Zephyr 7B Beta"},
-    {"id": "google/gemma-2-2b-it",                    "label": "Gemma 2 2B IT"},
-]
 
 def run_search_mode() -> None:
     _require_login()
@@ -381,42 +380,4 @@ def _display_search_results(results: list[dict], query: str) -> None:
 
     console.print(table)
 
-def _prompt_hf_setup() -> tuple[str, str, str]:
-    console.print("[bold]Choose an AI model:[/bold]\n")
-    table = Table(box=box.SIMPLE, show_header=False, padding=(0, 2))
-    table.add_column("Key", style="bold cyan", width=4)
-    table.add_column("Model", style="bold")
-    for i, m in enumerate(HF_MODELS, 1):
-        table.add_row(str(i), m["label"])
-    console.print(table)
-
-    choice = _prompt_choice("Select model", valid={str(i) for i in range(1, len(HF_MODELS) + 1)})
-    selected = HF_MODELS[int(choice) - 1]
-
-    console.print()
-    console.print(
-        "[dim]Enter your HuggingFace token "
-        "([cyan]https://huggingface.co/settings/tokens[/cyan]).[/dim]\n"
-        "[dim]Token is used for this session only and never stored.[/dim]\n"
-    )
-    hf_token = getpass.getpass("  HuggingFace token (hf_...): ")
-    if not hf_token.strip():
-        print_error("HuggingFace token is required.")
-        raise typer.Exit(1)
-    if not hf_token.strip().startswith("hf_"):
-        print_warning("Token doesn't start with 'hf_' — double-check it's correct.")
-
-    console.print()
-    return hf_token.strip(), selected["id"], selected["label"]
-
-def _require_login() -> None:
-    if not CredentialStore.is_logged_in():
-        print_error("Not logged in. Run `cmdmesh login` first.")
-        raise typer.Exit(1)
-
-def _prompt_choice(prompt: str, valid: set[str]) -> str:
-    while True:
-        val = input(f"  {prompt} [{'/'.join(sorted(valid))}]: ").strip()
-        if val in valid:
-            return val
-        err_console.print(f"[red]Enter one of: {', '.join(sorted(valid))}[/red]")
+    pass

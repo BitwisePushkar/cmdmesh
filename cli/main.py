@@ -2,6 +2,8 @@ import typer
 from cli.commands import auth as auth_commands
 from cli.commands import chat as chat_commands
 from cli.commands import search as search_commands
+from cli.commands import code as code_commands
+from cli.utils.auth_helpers import _require_login, _prompt_hf_setup
 
 app = typer.Typer(
     name="cmdmesh",
@@ -24,6 +26,7 @@ app.command(name="sessions")(chat_commands.sessions)
 app.command(name="history")(chat_commands.history)
 app.command(name="search")(search_commands.search_cmd)
 app.command(name="url")(search_commands.url_cmd)
+app.command(name="code")(code_commands.run_code_mode)
 
 if __name__ == "__main__":
     app()

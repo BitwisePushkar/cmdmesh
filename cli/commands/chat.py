@@ -1,5 +1,6 @@
 from typing import Optional
 import typer
+from cli.commands.code import run_code_mode
 from cli.commands.search import run_search_mode, run_url_mode
 import getpass
 from prompt_toolkit import PromptSession
@@ -11,6 +12,7 @@ from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.table import Table
+from cli.utils.auth_helpers import HF_MODELS, _require_login, _prompt_hf_setup, _prompt_choice
 from cli.auth import client as api
 from cli.auth.client import APIError
 from cli.auth.store import CredentialStore
@@ -19,34 +21,11 @@ from cli.utils.display import (console, err_console, print_error,
 
 app = typer.Typer(help="AI chat commands")
 
-HF_MODELS = [
-    {
-        "id":    "meta-llama/Llama-3.1-8B-Instruct",
-        "label": "Llama 3.1 8B Instruct",
-        "note":  "Meta's highly reliable 8B model — (Gated access required)",
-    },
-    {
-        "id":    "meta-llama/Llama-3.2-1B-Instruct",
-        "label": "Llama 3.2 1B Instruct",
-        "note":  "Meta's smallest model — Extremely fast and stable",
-    },
-    {
-        "id":    "HuggingFaceH4/zephyr-7b-beta",
-        "label": "Zephyr 7B Beta",
-        "note":  "A classic stable model — (No gated access required)",
-    },
-    {
-        "id":    "google/gemma-2-2b-it",
-        "label": "Gemma 2 2B IT",
-        "note":  "Google's smallest Gemma — very well supported",
-    },
-]
-
 MODES = {
     "1": "Chat with AI",
     "2": "Web Search (AI summary)",
     "3": "URL Context (AI summary)",
-    "4": "Code runner (coming soon)",
+    "4": "AI Code Assistant",
 }
 
 SLASH_HELP = {
@@ -73,7 +52,7 @@ def wakeup() -> None:
     table.add_column("Mode")
     table.add_column("Status", style="dim")
     for key, label in MODES.items():
-        status = "ready" if key in ("1", "2", "3") else "coming soon"
+        status = "ready" if key in ("1", "2", "3", "4") else "coming soon"
         if status == "ready":
             table.add_row(key, label, f"[dim]{status}[/dim]")
         else:
@@ -88,61 +67,14 @@ def wakeup() -> None:
         run_search_mode()
     elif choice == "3":
         run_url_mode()
+    elif choice == "4":
+        run_code_mode()
     else:
         print_warning("That feature is coming soon. Launching chat mode instead.")
         _run_chat_setup()
 
 def _run_chat_setup() -> None:
-    console.print()
-
-    console.print(Panel(
-        "Enter your [bold]HuggingFace API token[/bold].\n\n"
-        "Free token (read access is enough):\n"
-        "[cyan]https://huggingface.co/settings/tokens[/cyan]\n\n"
-        "[dim]Your token is used only for this session and is never stored.[/dim]",
-        border_style="yellow",
-        title="[yellow]HuggingFace token required[/yellow]",
-        padding=(0, 2),
-    ))
-    console.print()
-
-    hf_token = _prompt_secret("HuggingFace token (hf_...)")
-
-    if not hf_token:
-        print_error("HuggingFace API token is required to proceed.")
-        raise typer.Exit(1)
-
-    if not hf_token.startswith("hf_"):
-        print_warning("Token doesn't start with 'hf_' — double-check it is correct.")
-
-    console.print()
-    console.print("[bold]Choose an AI model (powered by HuggingFace):[/bold]\n")
-
-    model_table = Table(box=box.SIMPLE, show_header=False, padding=(0, 2))
-    model_table.add_column("Key", style="bold cyan", width=4)
-    model_table.add_column("Model", style="bold")
-    model_table.add_column("Notes", style="dim")
-    for i, m in enumerate(HF_MODELS, 1):
-        model_table.add_row(str(i), m["label"], m["note"])
-    
-    custom_choice = len(HF_MODELS) + 1
-    model_table.add_row(str(custom_choice), "Custom model...", "Enter any HuggingFace repo ID")
-    
-    console.print(model_table)
-
-    m_choice = _prompt_choice("Select model", valid={str(i) for i in range(1, custom_choice + 1)})
-    
-    if int(m_choice) == custom_choice:
-        console.print()
-        model_id = input("  HF Repo ID (e.g. 'google/gemma-7b') › ").strip()
-        if not model_id:
-            print_error("Model ID cannot be empty.")
-            raise typer.Exit(1)
-        model_label = model_id.split("/")[-1]
-    else:
-        selected = HF_MODELS[int(m_choice) - 1]
-        model_id = selected["id"]
-        model_label = selected["label"]
+    hf_token, model_id, model_label = _prompt_hf_setup()
 
     console.print()
     console.print(
@@ -441,18 +373,6 @@ def history(
         session = sess_list[int(pick) - 1]["id"]
 
     _cmd_history(session)
-
-def _require_login() -> None:
-    if not CredentialStore.is_logged_in():
-        print_error("Not logged in. Run `cmdmesh login` first.")
-        raise typer.Exit(1)
-
-def _prompt_choice(prompt: str, valid: set[str]) -> str:
-    while True:
-        val = input(f"  {prompt} [{'/'.join(sorted(valid))}]: ").strip()
-        if val in valid:
-            return val
-        err_console.print(f"[red]Please enter one of: {', '.join(sorted(valid))}[/red]")
 
 def _prompt_secret(prompt: str) -> str:
     try:

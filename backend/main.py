@@ -6,7 +6,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from backend.config import get_settings
 from backend.db.base import Base, engine
-from backend.routes import auth, chat, search
+from backend.routes import auth, chat, code, search
 import backend.models
 
 logging.basicConfig(
@@ -43,6 +43,7 @@ def create_app() -> FastAPI:
     app.include_router(auth.router)
     app.include_router(chat.router)
     app.include_router(search.router)
+    app.include_router(code.router)
     @app.exception_handler(RequestValidationError)
     async def validation_error_handler(
         request: Request, exc: RequestValidationError

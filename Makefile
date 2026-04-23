@@ -1,7 +1,8 @@
 .PHONY: help install up up-prod down logs logs-backend logs-worker \
-        backend backend-prod worker flower \
+        backend backend-prod worker flower cli \
         test test-cov test-signup test-login test-refresh test-reset \
-        lint format check clean gen-keys
+        test-chat test-search test-code \
+        lint format check clean docker-clean gen-keys
 
 PYTHON  := python
 UV      := uv
@@ -37,13 +38,21 @@ help:
 	@echo "    make test-login   Login + /me + logout tests"
 	@echo "    make test-refresh Token rotation + encryption tests"
 	@echo "    make test-reset   Password reset tests"
+	@echo "    make test-chat    AI Chat session tests"
+	@echo "    make test-search  Web search + AI summary tests"
+	@echo "    make test-code    AI Code Assistant tests"
+	@echo ""
+	@echo "  CLI"
+	@echo "    make cli          Run the cmdmesh CLI locally"
 	@echo ""
 	@echo "  Code quality"
 	@echo "    make lint         ruff check"
 	@echo "    make format       ruff format"
 	@echo "    make check        lint + format check (CI gate)"
 	@echo ""
-	@echo "  make clean          Remove __pycache__, .coverage, htmlcov"
+	@echo "  Cleanup"
+	@echo "    make clean        Remove local caches and coverage data"
+	@echo "    make docker-clean Stop and remove ALL containers, volumes, and local images"
 	@echo ""
 
 install:
@@ -83,6 +92,9 @@ print-urls:
 down:
 	$(COMPOSE) down
 
+docker-clean:
+	$(COMPOSE) down -v --rmi local --remove-orphans
+
 logs:
 	$(COMPOSE) logs -f
 
@@ -110,6 +122,9 @@ flower:
 	  --port=5555 \
 	  --basic_auth=admin:admin
 
+cli:
+	$(UV) run cmdmesh
+
 test:
 	$(UV) run pytest tests/ -v --tb=short
 
@@ -133,6 +148,15 @@ test-refresh:
 
 test-reset:
 	$(UV) run pytest tests/test_reset_password.py -v --tb=short
+
+test-chat:
+	$(UV) run pytest tests/test_chat.py -v --tb=short
+
+test-search:
+	$(UV) run pytest tests/test_search.py -v --tb=short
+
+test-code:
+	$(UV) run pytest tests/test_code.py -v --tb=short
 
 lint:
 	$(UV) run ruff check .

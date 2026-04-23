@@ -4,8 +4,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from httpx import AsyncClient
 from backend.services.search_service import search, _sanitise_query, SearchError, _results_to_context_block, _clean_snippet
-from duckduckgo_search.exceptions import RatelimitException
-from duckduckgo_search.exceptions import DuckDuckGoSearchException
+from ddgs.exceptions import RatelimitException
+from ddgs.exceptions import DDGSException
 from backend.schemas.search import SearchResult
 from backend.services.url_service import fetch_and_extract, URLFetchError, URLBlockedError, _build_context_block, _validate_url
 import httpx
@@ -104,11 +104,11 @@ async def test_search_service_rate_limit_retries():
 @pytest.mark.asyncio
 async def test_search_service_ddg_exception_raises_search_error():
     mock_ddgs = _mock_ddg()
-    mock_ddgs.text = MagicMock(side_effect=DuckDuckGoSearchException("network error"))
+    mock_ddgs.text = MagicMock(side_effect=DDGSException("network error"))
     mock_ddgs.__enter__ = MagicMock(return_value=mock_ddgs)
     mock_ddgs.__exit__ = MagicMock(return_value=False)
 
-    with patch("backend.services.search_service._do_search_sync", side_effect=DuckDuckGoSearchException("network error")):
+    with patch("backend.services.search_service._do_search_sync", side_effect=DDGSException("network error")):
         with pytest.raises(SearchError):
             await search("test")
 
@@ -422,7 +422,7 @@ async def test_search_query_with_ai_streams_answer(
     client: AsyncClient, auth_headers
 ):
     with patch("backend.services.search_service.DDGS", return_value=_mock_ddg()), \
-         patch("backend.services.providers.huggingface.stream_hf_response",
+         patch("backend.services.search_service.stream_hf_response",
                side_effect=_mock_hf_stream("Python is a language.")):
         r = await client.post(
             "/search/query",
@@ -437,7 +437,7 @@ async def test_search_stream_endpoint_yields_results_then_chunks(
     client: AsyncClient, auth_headers
 ):
     with patch("backend.services.search_service.DDGS", return_value=_mock_ddg()), \
-         patch("backend.services.providers.huggingface.stream_hf_response",
+         patch("backend.routes.search.stream_hf_response",
                side_effect=_mock_hf_stream("Answer here")):
         r = await client.post(
             "/search/query/stream",
@@ -543,7 +543,7 @@ async def test_url_stream_endpoint_yields_meta_then_chunks(
 ):
     with patch("backend.routes.search.fetch_and_extract",
                return_value=("Article content", "Article Title", [])), \
-         patch("backend.services.providers.huggingface.stream_hf_response",
+         patch("backend.routes.search.stream_hf_response",
                side_effect=_mock_hf_stream("Summary chunk")):
         r = await client.post(
             "/search/url/stream",

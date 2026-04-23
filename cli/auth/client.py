@@ -276,3 +276,38 @@ def _silent_refresh() -> str | None:
         return data["access_token"]
     except APIError:
         return None
+
+def stream_code_assist(
+    content: str,
+    task: str,
+    language: str | None = None,
+    extra_headers: dict | None = None,
+) -> Iterator[dict[str, Any]]:
+    token = _require_token()
+
+    def _do_stream(tok: str) -> Iterator[dict[str, Any]]:
+        payload: dict[str, Any] = {"task": task, "content": content}
+        if language:
+            payload["language"] = language
+        with _make_client(token=tok, extra_headers=extra_headers, timeout=180.0) as c:
+            with c.stream("POST", "/code/assist/stream", json=payload) as response:
+                if response.status_code == 401:
+                    raise APIError(401, "Unauthorized")
+                _raise_for_status(response)
+                for line in response.iter_lines():
+                    if line.strip():
+                        try:
+                            yield json.loads(line)
+                        except json.JSONDecodeError:
+                            continue
+
+    try:
+        yield from _do_stream(token)
+    except APIError as exc:
+        if exc.status_code == 401:
+            new_tok = _silent_refresh()
+            if not new_tok:
+                raise APIError(401, "Session expired. Run `cmdmesh login`.")
+            yield from _do_stream(new_tok)
+        else:
+            raise

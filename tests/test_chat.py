@@ -12,7 +12,7 @@ from backend.services.auth_service import AuthService
 import pytest
 from httpx import AsyncClient
 
-VALID_MODEL_ID = "mistralai/Mistral-7B-Instruct-v0.3"
+VALID_MODEL_ID = "meta-llama/Llama-3.1-8B-Instruct"
 HF_HEADER = {"X-HF-Token": "hf_test_token_abc123"}
 
 @pytest.fixture
@@ -85,10 +85,10 @@ async def test_models_returns_four_hf_models(client: AsyncClient, auth_headers):
 async def test_models_includes_expected_repos(client: AsyncClient, auth_headers):
     r = await client.get("/chat/models", headers=auth_headers)
     ids = [m["id"] for m in r.json()["models"]]
-    assert "mistralai/Mistral-7B-Instruct-v0.3" in ids
-    assert "meta-llama/Meta-Llama-3-8B-Instruct" in ids
-    assert "microsoft/Phi-3-mini-4k-instruct" in ids
+    assert "meta-llama/Llama-3.1-8B-Instruct" in ids
+    assert "meta-llama/Llama-3.2-1B-Instruct" in ids
     assert "HuggingFaceH4/zephyr-7b-beta" in ids
+    assert "google/gemma-2-2b-it" in ids
 
 @pytest.mark.asyncio
 async def test_create_session_requires_auth(client: AsyncClient):
@@ -134,10 +134,10 @@ async def test_create_session_success(client: AsyncClient, auth_headers):
 @pytest.mark.asyncio
 async def test_create_session_all_four_models(client: AsyncClient, auth_headers):
     models = [
-        "mistralai/Mistral-7B-Instruct-v0.3",
-        "meta-llama/Meta-Llama-3-8B-Instruct",
-        "microsoft/Phi-3-mini-4k-instruct",
+        "meta-llama/Llama-3.1-8B-Instruct",
+        "meta-llama/Llama-3.2-1B-Instruct",
         "HuggingFaceH4/zephyr-7b-beta",
+        "google/gemma-2-2b-it",
     ]
     for model_id in models:
         r = await client.post(
@@ -152,7 +152,7 @@ async def test_create_session_all_four_models(client: AsyncClient, auth_headers)
 async def test_create_session_invalid_model_rejected(client: AsyncClient, auth_headers):
     r = await client.post(
         "/chat/sessions",
-        json={"model_id": "some-random/not-a-real-model"},
+        json={"model_id": "not-a-real-model"},
         headers=auth_headers,
     )
     assert r.status_code == 422

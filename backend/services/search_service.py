@@ -2,8 +2,8 @@ import logging
 import re
 import asyncio
 from dataclasses import dataclass
-from duckduckgo_search import DDGS
-from duckduckgo_search.exceptions import DuckDuckGoSearchException, RatelimitException
+from ddgs import DDGS
+from ddgs.exceptions import DDGSException, RatelimitException
 from backend.schemas.search import SearchResult
 from backend.services.providers.huggingface import stream_hf_response
 
@@ -78,11 +78,11 @@ async def search(
         await asyncio.sleep(_RETRY_SLEEP)
         try:
             raw = await asyncio.to_thread(_do_search_sync, clean_query, max_results)
-        except (RatelimitException, DuckDuckGoSearchException) as exc:
+        except (RatelimitException, DDGSException) as exc:
             raise SearchError(
                 "Search is temporarily rate-limited. Please wait a moment and try again."
             ) from exc
-    except DuckDuckGoSearchException as exc:
+    except DDGSException as exc:
         raise SearchError(f"Search failed: {exc}") from exc
     except Exception as exc:
         log.error("Unexpected search error: %s", exc)
