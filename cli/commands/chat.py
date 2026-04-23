@@ -1,5 +1,6 @@
 from typing import Optional
 import typer
+from cli.commands.search import run_search_mode, run_url_mode
 import getpass
 from prompt_toolkit import PromptSession
 from prompt_toolkit.formatted_text import HTML
@@ -20,32 +21,32 @@ app = typer.Typer(help="AI chat commands")
 
 HF_MODELS = [
     {
-        "id":    "mistralai/Mistral-7B-Instruct-v0.3",
-        "label": "Mistral 7B Instruct",
-        "note":  "Fast, strong at reasoning & instructions",
+        "id":    "meta-llama/Llama-3.1-8B-Instruct",
+        "label": "Llama 3.1 8B Instruct",
+        "note":  "Meta's highly reliable 8B model — (Gated access required)",
     },
     {
-        "id":    "meta-llama/Meta-Llama-3-8B-Instruct",
-        "label": "Llama 3 8B Instruct",
-        "note":  "Meta's Llama 3 — excellent general quality",
-    },
-    {
-        "id":    "microsoft/Phi-3-mini-4k-instruct",
-        "label": "Phi-3 Mini 4K",
-        "note":  "Microsoft — very fast and efficient",
+        "id":    "meta-llama/Llama-3.2-1B-Instruct",
+        "label": "Llama 3.2 1B Instruct",
+        "note":  "Meta's smallest model — Extremely fast and stable",
     },
     {
         "id":    "HuggingFaceH4/zephyr-7b-beta",
         "label": "Zephyr 7B Beta",
-        "note":  "Chat-optimised, great at following prompts",
+        "note":  "A classic stable model — (No gated access required)",
+    },
+    {
+        "id":    "google/gemma-2-2b-it",
+        "label": "Gemma 2 2B IT",
+        "note":  "Google's smallest Gemma — very well supported",
     },
 ]
 
 MODES = {
     "1": "Chat with AI",
-    "2": "URL context (coming soon)",
-    "3": "Code runner (coming soon)",
-    "4": "AI code helper (coming soon)",
+    "2": "Web Search (AI summary)",
+    "3": "URL Context (AI summary)",
+    "4": "Code runner (coming soon)",
 }
 
 SLASH_HELP = {
@@ -72,8 +73,8 @@ def wakeup() -> None:
     table.add_column("Mode")
     table.add_column("Status", style="dim")
     for key, label in MODES.items():
-        status = "ready" if key == "1" else "coming soon"
-        if key == "1":
+        status = "ready" if key in ("1", "2", "3") else "coming soon"
+        if status == "ready":
             table.add_row(key, label, f"[dim]{status}[/dim]")
         else:
             table.add_row(f"[dim]{key}[/dim]", f"[dim]{label}[/dim]", f"[dim]{status}[/dim]")
@@ -81,10 +82,15 @@ def wakeup() -> None:
 
     choice = _prompt_choice("Select mode", valid=set(MODES.keys()))
 
-    if choice != "1":
+    if choice == "1":
+        _run_chat_setup()
+    elif choice == "2":
+        run_search_mode()
+    elif choice == "3":
+        run_url_mode()
+    else:
         print_warning("That feature is coming soon. Launching chat mode instead.")
-
-    _run_chat_setup()
+        _run_chat_setup()
 
 def _run_chat_setup() -> None:
     console.print()

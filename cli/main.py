@@ -1,6 +1,7 @@
 import typer
 from cli.commands import auth as auth_commands
 from cli.commands import chat as chat_commands
+from cli.commands import search as search_commands
 
 app = typer.Typer(
     name="cmdmesh",
@@ -21,6 +22,8 @@ app.command(name="reset-password")(auth_commands.reset_password)
 app.command(name="wakeup")(chat_commands.wakeup)
 app.command(name="sessions")(chat_commands.sessions)
 app.command(name="history")(chat_commands.history)
+app.command(name="search")(search_commands.search_cmd)
+app.command(name="url")(search_commands.url_cmd)
 
 if __name__ == "__main__":
     app()

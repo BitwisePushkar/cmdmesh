@@ -4,24 +4,24 @@ from pydantic import BaseModel, Field, field_validator
 
 HF_MODELS: list[dict] = [
     {
-        "id":    "mistralai/Mistral-7B-Instruct-v0.3",
-        "label": "Mistral 7B Instruct",
-        "note":  "Fast, strong at reasoning and instruction following",
+        "id":    "meta-llama/Llama-3.1-8B-Instruct",
+        "label": "Llama 3.1 8B Instruct",
+        "note":  "Meta's highly reliable 8B model — (Gated access required)",
     },
     {
-        "id":    "meta-llama/Meta-Llama-3-8B-Instruct",
-        "label": "Llama 3 8B Instruct",
-        "note":  "Meta's Llama 3, excellent general quality",
-    },
-    {
-        "id":    "microsoft/Phi-3-mini-4k-instruct",
-        "label": "Phi-3 Mini 4K",
-        "note":  "Microsoft, very fast and efficient",
+        "id":    "meta-llama/Llama-3.2-1B-Instruct",
+        "label": "Llama 3.2 1B Instruct",
+        "note":  "Meta's smallest model — Extremely fast and stable",
     },
     {
         "id":    "HuggingFaceH4/zephyr-7b-beta",
         "label": "Zephyr 7B Beta",
-        "note":  "Chat-optimised, good at following complex prompts",
+        "note":  "A classic stable model — (No gated access required)",
+    },
+    {
+        "id":    "google/gemma-2-2b-it",
+        "label": "Gemma 2 2B IT",
+        "note":  "Google's smallest Gemma — very well supported",
     },
 ]
 
@@ -34,11 +34,15 @@ class ChatSessionCreateRequest(BaseModel):
 
     @field_validator("model_id")
     @classmethod
-    def model_must_be_known(cls, v: str) -> str:
-        if v not in HF_MODEL_IDS:
+    def model_must_be_valid(cls, v: str) -> str:
+        # Allow pre-defined models OR any custom repo ID (usually 'owner/repo')
+        if v in HF_MODEL_IDS:
+            return v
+        
+        if "/" not in v:
             raise ValueError(
-                f"Unknown model '{v}'. "
-                f"Allowed: {', '.join(HF_MODEL_IDS)}"
+                f"Invalid model ID '{v}'. Must be one of {', '.join(HF_MODEL_IDS)} "
+                "or a valid HuggingFace repository ID (e.g. 'owner/model')."
             )
         return v
 

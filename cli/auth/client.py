@@ -36,6 +36,10 @@ def _extract_detail(response: httpx.Response) -> str:
 def _raise_for_status(response: httpx.Response) -> None:
     if response.status_code < 400:
         return
+    try:
+        response.read()
+    except httpx.ResponseNotRead:
+        pass
     raise APIError(response.status_code, _extract_detail(response))
 
 def _make_client(
@@ -202,6 +206,54 @@ def stream_chat_message(
             yield from _do_stream(new_tok)
         else:
             raise
+
+def search_query(query: str, max_results: int = 5) -> dict[str, Any]:
+    token = _require_token()
+    with _make_client(token=token) as c:
+        r = c.post("/search/query", json={"query": query, "max_results": max_results})
+        _raise_for_status(r)
+        return r.json()
+
+def stream_search(
+    query: str,
+    ai_question: str,
+    extra_headers: dict[str, str]
+) -> Iterator[dict[str, Any]]:
+    token = _require_token()
+    with _make_client(token=token, extra_headers=extra_headers, timeout=60.0) as c:
+        with c.stream(
+            "POST",
+            "/search/query/stream",
+            json={"query": query, "ai_question": ai_question}
+        ) as r:
+            _raise_for_status(r)
+            for line in r.iter_lines():
+                if line.strip():
+                    yield json.loads(line)
+
+def url_context(url: str, max_chars: int = 8000) -> dict[str, Any]:
+    token = _require_token()
+    with _make_client(token=token) as c:
+        r = c.post("/search/url", json={"url": url, "max_chars": max_chars})
+        _raise_for_status(r)
+        return r.json()
+
+def stream_url_context(
+    url: str,
+    ai_question: str,
+    extra_headers: dict[str, str]
+) -> Iterator[dict[str, Any]]:
+    token = _require_token()
+    with _make_client(token=token, extra_headers=extra_headers, timeout=60.0) as c:
+        with c.stream(
+            "POST",
+            "/search/url/stream",
+            json={"url": url, "ai_question": ai_question}
+        ) as r:
+            _raise_for_status(r)
+            for line in r.iter_lines():
+                if line.strip():
+                    yield json.loads(line)
 
 def _require_token() -> str:
     token = CredentialStore.get_access_token()

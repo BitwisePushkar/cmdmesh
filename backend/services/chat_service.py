@@ -181,6 +181,25 @@ class ChatService:
 
         return msg
 
+    async def append_system_message(
+        self, session_id: uuid.UUID, content: str
+    ) -> ChatMessage:
+        """
+        Append a system message (e.g. injected context) to the history.
+        """
+        position = await self._next_position(session_id)
+        msg = ChatMessage(
+            session_id=session_id,
+            role="system",
+            content=content,
+            position=position,
+        )
+        self._db.add(msg)
+        await self._db.flush()
+        await self._bump_session(session_id)
+        await self._redis_push(session_id, {"role": "system", "content": content})
+        return msg
+
     async def clear_context(self, session_id: uuid.UUID) -> None:
 
         await self._redis.delete(self._messages_key(session_id))
@@ -263,8 +282,9 @@ class ChatService:
             context_msgs.append({"role": "system", "content": session.system_context})
 
         for msg in messages:
-
-            if msg.role == "system":
+            # We skip the "permanent" system context if it's already added,
+            # but we ALLOW re-injecting other system messages (e.g. search results).
+            if msg.role == "system" and msg.content == session.system_context:
                 continue
             context_msgs.append({"role": msg.role, "content": msg.content})
 
