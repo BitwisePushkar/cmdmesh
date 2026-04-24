@@ -41,9 +41,9 @@ Credentials stored locally using **Fernet encryption** with strict permissions (
 
 ### Web Search
 
-* DuckDuckGo (no API key)
+* DuckDuckGo(ddgs)
 * Numbered results
-* Optional AI answers with context
+* AI answers with context
 
 ---
 
@@ -153,7 +153,7 @@ Modes: `generate · debug · explain · refactor · review · test · complete`
 ### Install
 
 ```bash
-git clone https://github.com/you/cmdmesh
+git clone https://github.com/BitwisePushkar/cmdmesh.git
 cd cmdmesh
 uv sync
 ```
@@ -166,7 +166,45 @@ uv sync
 cp .env.example .env
 ```
 
-Generate secrets:
+---
+
+#### SMTP Setup
+
+##### Gmail (App Password)
+
+1. Enable 2FA on your Google account
+2. Generate an **App Password** (Mail → Other)
+3. Add to `.env`:
+
+```env
+SMTP_HOST="smtp.gmail.com"
+SMTP_PORT="587"
+SMTP_USERNAME="your_email@gmail.com"
+SMTP_PASSWORD="your_app_password"
+SMTP_FROM="your_email@gmail.com"
+SMTP_TLS="False"
+SMTP_STARTTLS="True"
+```
+
+---
+
+##### Local (MailHog)
+
+```env
+SMTP_HOST="mailhog"
+SMTP_PORT="1025"
+SMTP_USERNAME=""
+SMTP_PASSWORD=""
+SMTP_FROM="test@cmdmesh.dev"
+SMTP_TLS="False"
+SMTP_STARTTLS="False"
+```
+
+Mail UI → [http://localhost:8025](http://localhost:8025)
+
+---
+
+####  Generate Secrets
 
 ```bash
 uv run python -c "import secrets; print(secrets.token_hex(64))"
